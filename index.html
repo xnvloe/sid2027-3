@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>After School Planner</title>
+<style>
+:root{color-scheme:light dark}html,body{margin:0;min-height:100%}.planner-root{background:light-dark(#f7f6f2,#171817);color:light-dark(#232522,#f2f2ed);border-radius:0;width:100%;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:30px 18px 42px;box-sizing:border-box}.planner-root *{box-sizing:border-box}.wrap{max-width:960px;margin:0 auto}.controls-section{padding-top:4px}.time-summary{display:flex;align-items:center;justify-content:flex-start;margin-bottom:10px;padding:12px 2px 0;color:light-dark(#62665f,#b6bbb1);font-size:14px}.time-summary strong{color:light-dark(#232522,#f2f2ed);font-size:15px}.allocation-bar{display:flex;width:100%;height:34px;margin-bottom:22px;background:#fff;border:1px solid light-dark(#d9d8d1,#4a4c48);border-radius:999px;overflow:hidden}.allocation-segment{height:100%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;min-width:0;overflow:hidden;transition:width .15s ease}.allocation-label{padding:0 5px;color:#fff;font-size:11px;font-weight:750;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px rgba(0,0,0,.45)}.reset-btn{border:1px solid light-dark(#cfcfc7,#494b46);background:light-dark(#fff,#242623);color:inherit;border-radius:10px;padding:10px 15px;min-height:44px;font-weight:650;cursor:pointer}.reset-btn:focus-visible,.time-range:focus-visible{outline:3px solid light-dark(#555a52,#d9ddd5);outline-offset:2px}.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px}.control-row{display:grid;grid-template-columns:145px minmax(90px,150px) 70px;align-items:center;gap:12px;padding:14px 16px;border-radius:16px;background:light-dark(#fff,#222421);border:1px solid light-dark(#e5e4dd,#343632)}.reset-slot{display:flex;align-items:flex-end;justify-content:flex-end;grid-column:2}.activity-label{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:650;min-width:0}.activity-text{display:flex;flex-direction:column;min-width:0;line-height:1.15}.activity-name{font-weight:650;overflow:hidden;text-overflow:ellipsis}.activity-example{margin-top:3px;font-size:12px;font-weight:500;color:light-dark(#73776f,#aeb3aa);white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25}.dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto}.time-range{width:100%;accent-color:light-dark(#555a52,#d9ddd5);min-height:44px}.duration{text-align:right;font-variant-numeric:tabular-nums;font-size:14px;font-weight:750;line-height:1.2;white-space:normal}.c1{background:#d9827b}.c2{background:#e6ae66}.c3{background:#7d9d78}.c4{background:#718cb4}.c5{background:#9b82b5}.c6{background:#76a7a2}.c8{background:#8d94a0}.c9{background:#566276}@media(max-width:760px){.planner-root{padding:24px 14px 34px}.controls{grid-template-columns:1fr}.control-row{grid-template-columns:1fr 76px;gap:6px 10px}.activity-label{grid-column:1}.duration{grid-column:2;grid-row:1}.time-range{grid-column:1/-1;grid-row:2}.reset-slot{justify-content:flex-end;grid-column:1}.time-summary{font-size:12px}.allocation-label{font-size:10px;padding:0 3px}}
+</style>
+</head>
+<body>
+<div id="planner-root" class="planner-root">
+  <div class="wrap">
+    <section class="controls-section">
+      <div class="time-summary"><strong><span id="used-hours">0 min</span> / 13 hours</strong></div>
+      <div id="allocation-bar" class="allocation-bar" aria-label="Time allocated out of 13 hours"></div>
+      <div id="controls" class="controls"></div>
+    </section>
+  </div>
+</div>
+<script>
+(()=>{
+const root=document.getElementById('planner-root');if(!root||root.dataset.ready)return;root.dataset.ready='1';
+const TOTAL=780,STEP=15,MIN=0;const initial=[0,0,0,0,0,0,0,0];
+const activities=[
+{name:'Dinner',barLabel:'Dinner',shortLabel:'D',className:'c1',color:'#d9827b'},
+{name:'Family time',barLabel:'Family',shortLabel:'F',className:'c2',color:'#e6ae66'},
+{name:'Chores',barLabel:'Chores',shortLabel:'C',className:'c8',color:'#8d94a0'},
+{name:'Homework',barLabel:'Homework',shortLabel:'HW',className:'c3',color:'#7d9d78'},
+{name:'Screen time',example:'E.g. gaming, watching TV',barLabel:'Screen',shortLabel:'S',className:'c4',color:'#718cb4'},
+{name:'Screen-free hobbies',example:'E.g. reading, crafts',barLabel:'Hobbies',shortLabel:'H',className:'c5',color:'#9b82b5'},
+{name:'Shower',barLabel:'Shower',shortLabel:'Sh',className:'c6',color:'#76a7a2'},
+{name:'Sleep',example:'Recommended for teens: 8–10 hours',barLabel:'Sleep',shortLabel:'Sl',className:'c9',color:'#566276'}
+];
+let values=[...initial];
+const controls=document.getElementById('controls'),usedHours=document.getElementById('used-hours'),allocationBar=document.getElementById('allocation-bar');
+function fmt(m){const h=Math.floor(m/60),min=m%60;if(h===0)return `${min} min`;if(min===0)return `${h} hr`;return `${h} hr ${min} min`}
+function fmtTop(m){const h=Math.floor(m/60),min=m%60;const parts=[];if(h>0)parts.push(`${h} ${h===1?'hour':'hours'}`);if(min>0)parts.push(`${min} ${min===1?'min':'mins'}`);return parts.length?parts.join(' '):'0 min'}
+function fmtSlider(m){const h=Math.floor(m/60),min=m%60;if(h===0)return `${min} ${min===0||min===1?'min':'mins'}`;if(min===0)return `${h} ${h===1?'hour':'hours'}`;return `${h} ${h===1?'hour':'hours'}<br>${min} ${min===1?'min':'mins'}`}
+function draw(){const totalUsed=values.reduce((a,b)=>a+b,0);[...controls.querySelectorAll('.control-row')].forEach((row,i)=>{row.querySelector('.duration').innerHTML=fmtSlider(values[i]);const input=row.querySelector('input');input.max=TOTAL;input.value=values[i]});usedHours.textContent=fmtTop(totalUsed);allocationBar.innerHTML=activities.map((a,i)=>values[i]>0?`<div class="allocation-segment" style="width:${values[i]/TOTAL*100}%;background:${a.color}" title="${a.name}: ${fmtTop(values[i])}"><span class="allocation-label">${values[i]<=30?a.shortLabel:a.barLabel}</span></div>`:'').join('')}
+function build(){controls.innerHTML=activities.map((a,i)=>`<div class="control-row" data-index="${i}"><label class="activity-label" for="range-${i}"><span class="dot ${a.className}"></span><span class="activity-text"><span class="activity-name">${a.name}</span>${a.example?`<span class="activity-example">(${a.example})</span>`:''}</span></label><input id="range-${i}" class="time-range" type="range" min="${MIN}" max="${TOTAL}" step="${STEP}" value="${values[i]}" aria-label="Time for ${a.name}"><span class="duration">${fmtSlider(values[i])}</span></div>`).join('')+'<div class="reset-slot"><button id="reset-btn" type="button" class="reset-btn">Reset</button></div>';controls.querySelectorAll('input').forEach((input,i)=>input.addEventListener('input',()=>adjustFromSlider(i,Number(input.value))))}
+function adjustFromSlider(i,target){const otherUsed=values.reduce((sum,value,j)=>j===i?sum:sum+value,0);const maxAllowed=TOTAL-otherUsed;target=Math.max(MIN,Math.min(target,maxAllowed));values[i]=target;draw()}
+build();document.getElementById('reset-btn').addEventListener('click',()=>{values=[...initial];draw()});draw();
+})();
+</script>
+</body>
+</html>
